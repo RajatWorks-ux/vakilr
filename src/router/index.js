@@ -61,7 +61,12 @@ const routes = [
   // ─── ADMIN ───
   // Note: In production, add an `isAdmin` meta guard. For now accessible by direct URL.
   { path: '/admin/disputes', name: 'ModeratorPanel', component: () => import('@/views/dispute/ModeratorPanel.vue'), meta: { requiresAuth: true } },
+// ─── CLIENT WALLET (NEW) ───
+{ path: '/client/wallet', name: 'ClientWallet', component: () => import('@/views/client/ClientWallet.vue'), meta: { requiresAuth: true, role: 'client' } },
 
+// ─── LEGAL ───
+{ path: '/privacy', name: 'PrivacyPolicy', component: () => import('@/views/legal/PrivacyPolicy.vue') },
+{ path: '/terms', name: 'TermsOfService', component: () => import('@/views/legal/TermsOfService.vue') },
   // ─── CATCH ALL ───
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]

@@ -2,7 +2,6 @@
   <div class="client-home">
     <div class="ch-bg"></div>
 
-    <!-- Header -->
     <div class="ch-header">
       <div class="ch-greeting">
         <p class="ch-hello">Good {{ timeOfDay }},</p>
@@ -13,7 +12,6 @@
       </router-link>
     </div>
 
-    <!-- Search Bar -->
     <div class="search-wrap">
       <div class="search-box" @click="$router.push('/client/browse')">
         <span class="search-icon">🔍</span>
@@ -24,7 +22,6 @@
       </router-link>
     </div>
 
-    <!-- Categories -->
     <div class="categories-scroll">
       <button
         v-for="cat in categories" :key="cat.label"
@@ -35,7 +32,6 @@
       </button>
     </div>
 
-    <!-- Online Lawyers Now -->
     <div class="section">
       <div class="section-header">
         <h2 class="section-title">Online Now <span class="online-dot"></span></h2>
@@ -61,7 +57,6 @@
       </div>
     </div>
 
-    <!-- Top Rated -->
     <div class="section">
       <div class="section-header">
         <h2 class="section-title">Top Rated</h2>
@@ -90,7 +85,6 @@
       </div>
     </div>
 
-    <!-- AI Guide CTA -->
     <div class="ai-cta-card" @click="$router.push('/client/ai-guide')">
       <div class="ai-cta-left">
         <div class="ai-cta-icon">✨</div>
@@ -102,6 +96,33 @@
       <span class="ai-cta-arrow">→</span>
     </div>
 
+    <div class="section" style="margin-top: 1.5rem;">
+      <div class="section-header">
+        <h2 class="section-title">Account & Settings</h2>
+      </div>
+      <div class="settings-card">
+        <router-link to="/client/profile" class="settings-item">
+          <span class="si-icon">👤</span>
+          <span class="si-text">Edit Profile</span>
+          <span class="si-arrow">→</span>
+        </router-link>
+        <router-link to="/privacy" class="settings-item">
+          <span class="si-icon">🔒</span>
+          <span class="si-text">Privacy Policy</span>
+          <span class="si-arrow">→</span>
+        </router-link>
+        <router-link to="/terms" class="settings-item">
+          <span class="si-icon">📜</span>
+          <span class="si-text">Terms of Service</span>
+          <span class="si-arrow">→</span>
+        </router-link>
+        <button class="settings-item logout-item" @click="doLogout">
+          <span class="si-icon">🚪</span>
+          <span class="si-text">Sign Out</span>
+        </button>
+      </div>
+    </div>
+
     <div style="height:80px"></div>
     <ClientBottomNav />
   </div>
@@ -109,10 +130,12 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useClientStore } from '@/stores/client'
 import ClientBottomNav from '@/components/ClientBottomNav.vue'
 
+const router = useRouter()
 const auth = useAuthStore()
 const clientStore = useClientStore()
 
@@ -151,6 +174,11 @@ function getMinRate(l) {
   const svcs = l.lawyer_services?.filter(s => s.is_active && s.price_unit === 'per_minute')
   if (svcs?.length) return Math.min(...svcs.map(s => s.price_amount))
   return '—'
+}
+
+async function doLogout() {
+  await auth.signOut()
+  router.push('/login')
 }
 
 onMounted(async () => {
@@ -215,4 +243,15 @@ onMounted(async () => {
 .ai-cta-title{font-weight:700;font-size:0.92rem;color:#f0f4ff;margin-bottom:0.25rem}
 .ai-cta-sub{font-size:0.78rem;color:rgba(240,244,255,0.55);line-height:1.5}
 .ai-cta-arrow{font-size:1.2rem;color:#C9A84C;flex-shrink:0}
+
+/* New Settings Card Styles */
+.settings-card { background: rgba(22,29,63,0.8); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; margin: 0 1.25rem; display: flex; flex-direction: column; overflow: hidden; }
+.settings-item { display: flex; align-items: center; gap: 0.875rem; padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); text-decoration: none; background: transparent; border-top: none; border-left: none; border-right: none; width: 100%; text-align: left; cursor: pointer; transition: background 0.2s; }
+.settings-item:last-child { border-bottom: none; }
+.settings-item:hover { background: rgba(201,168,76,0.05); }
+.si-icon { font-size: 1.1rem; flex-shrink: 0; }
+.si-text { font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; color: #f0f4ff; flex: 1; }
+.si-arrow { font-size: 1rem; color: rgba(240,244,255,0.3); }
+.logout-item .si-text { color: #f87171; }
+.logout-item:hover { background: rgba(239,68,68,0.05); }
 </style>

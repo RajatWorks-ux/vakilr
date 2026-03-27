@@ -10,7 +10,6 @@
     </div>
 
     <div class="profile-content">
-      <!-- Photo Upload -->
       <div class="photo-section">
         <div class="photo-wrap" @click="triggerPhotoUpload">
           <img v-if="avatarUrl" :src="avatarUrl" class="photo-img" alt="avatar" />
@@ -23,7 +22,6 @@
         <p class="photo-hint">Tap to upload photo</p>
       </div>
 
-      <!-- Basic Info -->
       <div class="form-section">
         <h3 class="form-section-title">Basic Information</h3>
         <div class="field">
@@ -44,7 +42,6 @@
         </div>
       </div>
 
-      <!-- Bio -->
       <div class="form-section">
         <h3 class="form-section-title">Professional Bio</h3>
         <div class="field">
@@ -53,7 +50,6 @@
         </div>
       </div>
 
-      <!-- Specializations -->
       <div class="form-section">
         <h3 class="form-section-title">Specializations</h3>
         <div class="spec-grid">
@@ -65,7 +61,6 @@
         </div>
       </div>
 
-      <!-- Languages -->
       <div class="form-section">
         <h3 class="form-section-title">Languages Spoken</h3>
         <div class="spec-grid">
@@ -77,7 +72,6 @@
         </div>
       </div>
 
-      <!-- Bar Council Info (read-only) -->
       <div class="form-section">
         <h3 class="form-section-title">Bar Council Details</h3>
         <div class="readonly-field">
@@ -89,6 +83,18 @@
 
       <div v-if="successMsg" class="success-banner">✓ {{ successMsg }}</div>
       <div v-if="errorMsg" class="error-banner">✗ {{ errorMsg }}</div>
+
+      <div class="logout-section">
+        <button class="logout-btn" @click="doLogout">
+          <span>🚪</span> Sign Out
+        </button>
+        <div class="legal-links">
+          <router-link to="/privacy">Privacy Policy</router-link>
+          <span>·</span>
+          <router-link to="/terms">Terms of Service</router-link>
+        </div>
+        <p class="version">Vakilr v1.0.0 · Test Build</p>
+      </div>
     </div>
 
     <div style="height:80px"></div>
@@ -98,12 +104,14 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useLawyerStore } from '@/stores/lawyer'
 import LawyerBottomNav from '@/components/LawyerBottomNav.vue'
 
 const auth = useAuthStore()
 const lawyerStore = useLawyerStore()
+const router = useRouter()
 
 const photoInput = ref(null)
 const saving     = ref(false)
@@ -154,6 +162,11 @@ async function saveProfile() {
   else { errorMsg.value = 'Failed to save. Please try again.' }
 }
 
+async function doLogout() {
+  await auth.signOut()
+  router.push('/login')
+}
+
 onMounted(async () => {
   if (auth.user?.id && !lawyerStore.profile) await lawyerStore.fetchProfile(auth.user.id)
   const p = lawyerStore.profile
@@ -202,4 +215,13 @@ input:focus,textarea:focus{border-color:#C9A84C;box-shadow:0 0 0 3px rgba(201,16
 .readonly-note{font-size:0.72rem;color:rgba(240,244,255,0.35)}
 .success-banner{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);color:#10b981;padding:0.75rem 1rem;border-radius:10px;font-size:0.85rem;margin-top:1rem}
 .error-banner{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#ef4444;padding:0.75rem 1rem;border-radius:10px;font-size:0.85rem;margin-top:1rem}
+
+/* NEW LOGOUT STYLES */
+.logout-section { padding: 2rem 1.5rem 1rem; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.logout-btn { display: flex; align-items: center; gap: 8px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #f87171; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 600; padding: 12px 24px; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
+.logout-btn:active { background: rgba(239,68,68,0.2); }
+.legal-links { display: flex; align-items: center; gap: 8px; font-family: 'DM Sans', sans-serif; font-size: 0.75rem; }
+.legal-links a { color: rgba(240,244,255,0.35); text-decoration: none; }
+.legal-links span { color: rgba(240,244,255,0.2); }
+.version { font-family: 'DM Sans', sans-serif; font-size: 0.7rem; color: rgba(240,244,255,0.2); margin: 0; }
 </style>

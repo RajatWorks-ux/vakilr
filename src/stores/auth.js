@@ -113,6 +113,7 @@ export const useAuthStore = defineStore('auth', {
       await supabase.auth.signOut()
       this.user = null
       this.profile = null
+      // Router navigation handled by component
     },
 
     // ─── FORGOT PASSWORD ───

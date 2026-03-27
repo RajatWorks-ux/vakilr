@@ -1,143 +1,113 @@
 <template>
-  <div class="role-screen">
-    <div class="role-bg"></div>
-    <div class="role-inner">
+  <div class="role-page">
+    <div class="role-bg"><div class="orb o1"></div><div class="orb o2"></div></div>
+    <div class="role-content">
       <div class="role-header">
-        <div class="logo-mark">⚖️</div>
-        <h1 class="role-title">Who are you?</h1>
-        <p class="role-sub">Choose how you'll use Vakilr. You can't change this later.</p>
+        <h1 class="role-title">I am a...</h1>
+        <p class="role-sub">Choose your role to get started</p>
       </div>
-
       <div class="role-cards">
-        <button
-          v-for="r in roles" :key="r.id"
-          :class="['role-card', { selected: selected === r.id }]"
-          @click="selected = r.id"
-        >
-          <div class="role-icon">{{ r.icon }}</div>
-          <div class="role-info">
-            <div class="role-name">{{ r.title }}</div>
-            <div class="role-desc">{{ r.desc }}</div>
-          </div>
-          <div class="role-check" :class="{ active: selected === r.id }">
-            <span>✓</span>
-          </div>
-        </button>
+        <div v-for="role in roles" :key="role.id"
+          class="role-card"
+          :class="{ selected: selected === role.id }"
+          @click="select(role.id)"
+          @mousemove="tilt($event, role.id)"
+          @mouseleave="resetTilt(role.id)"
+          :ref="el => cardRefs[role.id] = el"
+          :style="cardStyles[role.id]">
+          <div class="card-glow"></div>
+          <div class="card-icon">{{ role.icon }}</div>
+          <h3 class="card-title">{{ role.label }}</h3>
+          <p class="card-desc">{{ role.desc }}</p>
+          <div class="card-check" :class="{ visible: selected === role.id }">✓</div>
+          <div v-if="selected === role.id" class="card-ripple"></div>
+        </div>
       </div>
-
-      <button
-        class="role-cta"
-        :disabled="!selected"
-        @click="proceed"
-      >
-        Continue as {{ roles.find(r => r.id === selected)?.short || '...' }} →
+      <button class="continue-btn" :class="{ active: !!selected }" :disabled="!selected" @click="goNext">
+        Continue as {{ selectedLabel }} →
       </button>
-
-      <p class="role-login">
-        Already have an account?
-        <router-link to="/login">Log in</router-link>
-      </p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const selected = ref(null)
+const cardRefs = {}
+const cardStyles = reactive({ client: {}, lawyer: {}, firm: {} })
 
 const roles = [
-  {
-    id: 'client',
-    icon: '👤',
-    title: 'I Need Legal Help',
-    desc: 'Find lawyers, book consultations, get documents drafted',
-    short: 'Client',
-  },
-  {
-    id: 'lawyer',
-    icon: '⚖️',
-    title: "I'm a Lawyer",
-    desc: 'List your services, get consistent clients, earn more',
-    short: 'Lawyer',
-  },
-  {
-    id: 'firm',
-    icon: '🏛️',
-    title: "I'm a Law Firm",
-    desc: 'Register your firm, manage your team, attract big clients',
-    short: 'Firm',
-  },
+  { id: 'client', icon: '🧑‍💼', label: 'Client', desc: 'I need legal help, advice, or documents' },
+  { id: 'lawyer', icon: '⚖️', label: 'Lawyer', desc: 'I want to offer legal services and earn' },
+  { id: 'firm', icon: '🏛️', label: 'Law Firm', desc: 'I represent a firm with multiple lawyers' },
 ]
 
-function proceed() {
-  if (selected.value) router.push(`/signup/${selected.value}`)
+const selectedLabel = computed(() => roles.find(r => r.id === selected.value)?.label || '')
+
+function select(id) {
+  selected.value = id
+  if (navigator.vibrate) navigator.vibrate(30)
+}
+
+function tilt(e, id) {
+  const el = cardRefs[id]
+  if (!el) return
+  const rect = el.getBoundingClientRect()
+  const x = (e.clientX - rect.left) / rect.width - 0.5
+  const y = (e.clientY - rect.top) / rect.height - 0.5
+  cardStyles[id] = { transform: `perspective(600px) rotateX(${-y * 12}deg) rotateY(${x * 12}deg) scale(1.02)` }
+}
+
+function resetTilt(id) {
+  cardStyles[id] = { transform: 'perspective(600px) rotateX(0) rotateY(0) scale(1)', transition: 'transform 0.4s ease' }
+}
+
+function goNext() {
+  if (!selected.value) return
+  router.push(`/signup/${selected.value}`)
 }
 </script>
 
 <style scoped>
-.role-screen {
-  min-height: 100vh; display: flex; align-items: center; justify-content: center;
-  background: #0A0F2C; position: relative; overflow: hidden; padding: 1.5rem;
-}
-.role-bg {
-  position: absolute; inset: 0;
-  background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(201,168,76,0.1), transparent 60%);
-}
-.role-inner {
-  position: relative; z-index: 1; width: 100%; max-width: 440px;
-  display: flex; flex-direction: column; gap: 0; align-items: stretch;
-}
-.role-header { text-align: center; margin-bottom: 2.5rem; }
-.logo-mark { font-size: 2.5rem; margin-bottom: 1rem; }
-.role-title {
-  font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 900;
-  color: #f0f4ff; margin-bottom: 0.75rem;
-}
-.role-sub { font-family: 'DM Sans', sans-serif; font-size: 0.95rem; color: #8892b0; line-height: 1.6; }
-.role-cards { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem; }
+.role-page { position: fixed; inset: 0; background: #04071a; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.role-bg { position: absolute; inset: 0; pointer-events: none; }
+.orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.15; }
+.o1 { width: 350px; height: 350px; background: #C9A84C; top: -100px; right: -80px; animation: orbFloat 6s ease-in-out infinite; }
+.o2 { width: 250px; height: 250px; background: #1a3a8f; bottom: -80px; left: -60px; animation: orbFloat 8s ease-in-out infinite reverse; }
+@keyframes orbFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-30px); } }
+.role-content { position: relative; z-index: 1; width: 100%; padding: 2rem 1.5rem; display: flex; flex-direction: column; gap: 2rem; }
+.role-header { text-align: center; }
+.role-title { font-family: 'Playfair Display', serif; font-size: 2rem; color: #f0f4ff; margin: 0 0 8px; }
+.role-sub { font-family: 'DM Sans', sans-serif; font-size: 0.9rem; color: rgba(240,244,255,0.45); margin: 0; }
+.role-cards { display: flex; flex-direction: column; gap: 12px; }
 .role-card {
-  display: flex; align-items: center; gap: 1rem;
-  background: rgba(22,29,63,0.8);
-  border: 1.5px solid rgba(255,255,255,0.07);
-  border-radius: 16px; padding: 1.1rem 1.2rem;
-  cursor: pointer; text-align: left; transition: all 0.25s;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px; padding: 1.4rem; cursor: pointer; position: relative;
+  overflow: hidden; transition: border-color 0.2s, background 0.2s;
+  will-change: transform;
 }
-.role-card:hover { border-color: rgba(201,168,76,0.3); background: rgba(201,168,76,0.05); }
-.role-card.selected {
-  border-color: #C9A84C;
-  background: rgba(201,168,76,0.08);
-  box-shadow: 0 0 0 3px rgba(201,168,76,0.1), 0 4px 20px rgba(201,168,76,0.15);
-}
-.role-icon { font-size: 2rem; flex-shrink: 0; }
-.role-info { flex: 1; }
-.role-name { font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 1rem; color: #f0f4ff; margin-bottom: 0.25rem; }
-.role-desc { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: #8892b0; line-height: 1.4; }
-.role-check {
-  width: 22px; height: 22px; border-radius: 50%;
-  border: 1.5px solid rgba(255,255,255,0.2);
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.25s; flex-shrink: 0;
-}
-.role-check span { font-size: 0.7rem; color: #0A0F2C; opacity: 0; transition: opacity 0.2s; }
-.role-check.active {
-  background: #C9A84C; border-color: #C9A84C;
-}
-.role-check.active span { opacity: 1; }
-.role-cta {
-  width: 100%; padding: 1rem; border-radius: 14px; border: none;
-  background: #C9A84C; color: #0A0F2C;
+.role-card.selected { border-color: rgba(201,168,76,0.6); background: rgba(201,168,76,0.08); }
+.card-glow { position: absolute; top: -50%; right: -20%; width: 150px; height: 150px; background: radial-gradient(circle, rgba(201,168,76,0.1) 0%, transparent 70%); pointer-events: none; }
+.card-icon { font-size: 2rem; margin-bottom: 8px; filter: drop-shadow(0 0 10px rgba(201,168,76,0.4)); }
+.card-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: #f0f4ff; margin: 0 0 4px; }
+.card-desc { font-family: 'DM Sans', sans-serif; font-size: 0.82rem; color: rgba(240,244,255,0.5); margin: 0; line-height: 1.5; }
+.card-check { position: absolute; top: 1rem; right: 1rem; width: 28px; height: 28px; border-radius: 50%; background: #C9A84C; color: #04071a; font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; justify-content: center; opacity: 0; transform: scale(0); transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.card-check.visible { opacity: 1; transform: scale(1); }
+.card-ripple { position: absolute; inset: 0; border: 2px solid rgba(201,168,76,0.4); border-radius: 20px; animation: rippleOut 0.5s ease forwards; pointer-events: none; }
+@keyframes rippleOut { from { transform: scale(0.95); opacity: 1; } to { transform: scale(1.02); opacity: 0; } }
+
+.continue-btn {
+  width: 100%; padding: 16px; border-radius: 16px; border: none;
+  background: rgba(201,168,76,0.2); color: rgba(201,168,76,0.5);
   font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 700;
-  cursor: pointer; transition: all 0.2s;
-  box-shadow: 0 0 24px rgba(201,168,76,0.3);
+  cursor: not-allowed; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.role-cta:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
-.role-cta:not(:disabled):hover { background: #e0b84a; transform: translateY(-1px); }
-.role-login {
-  text-align: center; font-family: 'DM Sans', sans-serif;
-  font-size: 0.85rem; color: #4a5578; margin-top: 1.5rem;
+.continue-btn.active {
+  background: linear-gradient(135deg, #C9A84C, #a8893d);
+  color: #04071a; cursor: pointer; box-shadow: 0 8px 24px rgba(201,168,76,0.3);
 }
-.role-login a { color: #C9A84C; text-decoration: none; font-weight: 600; }
+.continue-btn.active:active { transform: scale(0.98); }
 </style>
