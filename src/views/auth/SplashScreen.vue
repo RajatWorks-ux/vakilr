@@ -1,6 +1,17 @@
 <template>
   <div class="splash">
+    <!-- Background video: splash_scales.mp4 — very dim, just atmosphere -->
+    <video
+      class="splash-bg-video"
+      autoplay muted loop playsinline
+      :src="videoSrc"
+    ></video>
+    <div class="splash-video-overlay"></div>
+
+    <!-- Three.js 3D scales canvas — sits above video, below text -->
     <canvas ref="canvas" class="three-canvas"></canvas>
+
+    <!-- Text + loader -->
     <div class="splash-content" :class="{ visible: show }">
       <div class="logo-glow"></div>
       <h1 class="splash-title">
@@ -23,29 +34,46 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
-const router = useRouter()
-const canvas = ref(null)
+const router   = useRouter()
+const auth     = useAuthStore()
+const canvas   = ref(null)
 const show     = ref(false)
 const progress = ref(0)
-let animId = null
+let animId     = null
+
+// Fix for Capacitor Android: use BASE_URL so path resolves in both web + app
+const BASE     = (import.meta.env.BASE_URL || '/').replace(/\/$/, '')
+const videoSrc = `${BASE}/videos/splash_scales.mp4`
 
 onMounted(async () => {
   setTimeout(() => { show.value = true }, 200)
 
-  // Load Three.js dynamically
+  // ✅ FIXED: use ESM build of Three.js (cdnjs was UMD — silently failed with dynamic import)
   try {
-    const THREE = await import('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js' + '').catch(() => null)
+    const THREE = await import('https://esm.run/three@0.128.0')
     if (THREE && canvas.value) initThree(THREE)
-  } catch (e) { /* fallback to CSS only */ }
+  } catch (e) { /* graceful fallback — CSS glow still shows */ }
 
   const interval = setInterval(() => {
     progress.value = Math.min(100, progress.value + 2)
     if (progress.value >= 100) {
       clearInterval(interval)
       setTimeout(() => {
-        const visited = localStorage.getItem('vakilr_onboarded')
-        router.push(visited ? '/login' : '/onboarding')
+        // Web browser + not logged in → show landing page first
+        const isApp    = window?.Capacitor?.isNativePlatform?.()
+        const visited  = localStorage.getItem('vakilr_onboarded')
+        if (!isApp && !auth.isLoggedIn) {
+          router.push('/home')
+        } else if (auth.isLoggedIn) {
+          const dashMap = { client: '/client', lawyer: '/lawyer', firm: '/firm' }
+          router.push(dashMap[auth.role] || '/login')
+        } else if (visited) {
+          router.push('/login')
+        } else {
+          router.push('/onboarding')
+        }
       }, 400)
     }
   }, 50)
@@ -65,29 +93,23 @@ function initThree(THREE) {
 
   const gold = new THREE.MeshStandardMaterial({ color: 0xC9A84C, metalness: 0.8, roughness: 0.2 })
 
-  // Beam
   const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 3, 8), gold)
   scene.add(beam)
 
-  // Top pivot
   const pivot = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), gold)
   pivot.position.y = 1.5
   scene.add(pivot)
 
-  // Crossbar
   const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 3.4, 8), gold)
   bar.rotation.z = Math.PI / 2
   bar.position.y = 0.6
   scene.add(bar)
 
-  // Pans
   function makePan(x) {
     const g = new THREE.Group()
-    // Chain
     const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.2, 6), gold)
     chain.position.y = -0.6
     g.add(chain)
-    // Pan
     const pan = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.06, 32), gold)
     pan.position.y = -1.2
     g.add(pan)
@@ -95,16 +117,14 @@ function initThree(THREE) {
     return g
   }
   const leftPan  = makePan(-1.7)
-  const rightPan = makePan( 1.7)
+  const rightPan = makePan(1.7)
   scene.add(leftPan, rightPan)
 
-  // Lighting
   scene.add(new THREE.AmbientLight(0xffffff, 0.4))
   const pLight = new THREE.PointLight(0xC9A84C, 2, 10)
   pLight.position.set(0, 3, 3)
   scene.add(pLight)
 
-  // Particles
   const pts = new Float32Array(300 * 3)
   for (let i = 0; i < 300 * 3; i++) pts[i] = (Math.random() - 0.5) * 20
   const pGeo = new THREE.BufferGeometry()
@@ -134,13 +154,39 @@ function initThree(THREE) {
   position: fixed; inset: 0; background: #04071a;
   display: flex; align-items: center; justify-content: center; overflow: hidden;
 }
-.three-canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.6; }
+
+/* Layer 1 — background video, very subtle */
+.splash-bg-video {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  opacity: 0.20;
+  z-index: 0;
+}
+
+/* Layer 2 — dark vignette over video */
+.splash-video-overlay {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, rgba(4,7,26,0.35) 0%, rgba(4,7,26,0.88) 100%);
+  z-index: 1;
+}
+
+/* Layer 3 — Three.js 3D scales */
+.three-canvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  opacity: 0.65;
+  z-index: 2;
+}
+
+/* Layer 4 — text & loader */
 .splash-content {
-  position: relative; z-index: 1; text-align: center;
+  position: relative; z-index: 3; text-align: center;
   opacity: 0; transform: translateY(30px) scale(0.95);
   transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .splash-content.visible { opacity: 1; transform: translateY(0) scale(1); }
+
 .logo-glow {
   width: 200px; height: 200px; margin: 0 auto -100px;
   background: radial-gradient(circle, rgba(201,168,76,0.3) 0%, transparent 70%);
