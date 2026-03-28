@@ -10,7 +10,6 @@
         <h1 class="auth-title">{{ stepTitles[step-1] }}</h1>
       </div>
 
-      <!-- Step 1: Basic Info -->
       <form v-if="step === 1" class="auth-form" @submit.prevent="step = 2">
         <div class="field">
           <label>Full Name</label>
@@ -34,7 +33,6 @@
         <button class="submit-btn" type="submit">Next →</button>
       </form>
 
-      <!-- Step 2: Professional Info -->
       <form v-else-if="step === 2" class="auth-form" @submit.prevent="step = 3">
         <div class="field">
           <label>Bar Council Number</label>
@@ -62,7 +60,6 @@
         <button class="submit-btn" type="submit" :disabled="form.specs.length === 0">Next →</button>
       </form>
 
-      <!-- Step 3: Upload Certificate -->
       <div v-else class="auth-form">
         <div class="upload-area" @click="triggerUpload" :class="{ uploaded: certFile }">
           <input ref="fileInput" type="file" accept=".pdf,.jpg,.jpeg,.png" @change="handleFile" style="display:none" />
@@ -79,6 +76,13 @@
           {{ loading ? 'Submitting...' : 'Submit for Verification →' }}
         </button>
       </div>
+
+      <p class="terms-note">
+        By registering you agree to our
+        <router-link to="/terms">Terms of Service</router-link> and
+        <router-link to="/privacy">Privacy Policy</router-link>.
+        Your data is encrypted and never shared.
+      </p>
 
       <p class="login-link">Already have an account? <router-link to="/login">Log in</router-link></p>
     </div>
@@ -180,6 +184,11 @@ input:focus { border-color:#C9A84C; box-shadow:0 0 0 3px rgba(201,168,76,0.12); 
 .submit-btn { width:100%; padding:1rem; border-radius:14px; border:none; background:#C9A84C; color:#0A0F2C; font-family:'DM Sans',sans-serif; font-size:1rem; font-weight:700; cursor:pointer; box-shadow:0 0 24px rgba(201,168,76,0.3); transition:all 0.2s; }
 .submit-btn:disabled { opacity:0.35; cursor:not-allowed; box-shadow:none; }
 .submit-btn:not(:disabled):hover { background:#e0b84a; transform:translateY(-1px); }
+
+/* ADDED TERMS NOTE CSS HERE */
+.terms-note { text-align:center; font-family:'DM Sans',sans-serif; font-size:0.75rem; color:#4a5578; margin-top:1rem; }
+.terms-note a { color:#C9A84C; text-decoration:none; }
+
 .login-link { text-align:center; font-family:'DM Sans',sans-serif; font-size:0.85rem; color:#4a5578; margin-top:2rem; }
 .login-link a { color:#C9A84C; text-decoration:none; font-weight:600; }
 </style>
